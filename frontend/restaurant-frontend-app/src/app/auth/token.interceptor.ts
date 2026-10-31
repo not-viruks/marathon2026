@@ -17,10 +17,13 @@ export const tokenInterceptor: HttpInterceptorFn = (
 ) => {
   const toastr = inject(ToastService);
 
-  // IMPORTANT: do not modify Guest endpoints at all.
-  // Guest flow uses a different token (guest session token) and we must not touch the body.
-  // Otherwise we break POST /guest/sessions payload.
-  if (req.url.includes('/guest/')) {
+  // Endpoints under /guest/groups/ are owner endpoints that require Cognito Bearer token.
+  // Pure guest session endpoints (e.g. /guest/sessions, /guest/invites) don't use Cognito token.
+  if (req.url.includes('/guest/') && !req.url.includes('/guest/groups/')) {
+    if (req.context.get(SKIP_ERROR_TOAST)) {
+      return next(req);
+    }
+
     return next(req).pipe(
       catchError((error: HttpErrorResponse) => {
         console.log(error);
@@ -34,7 +37,6 @@ export const tokenInterceptor: HttpInterceptorFn = (
           errorMessage = error.error.message;
         }
 
-        // For guest endpoints, you may still show toast if you want:
         switch (error.status) {
           case 400:
             toastr.error(errorMessage || 'Bad request.', 'Error');
@@ -71,7 +73,7 @@ export const tokenInterceptor: HttpInterceptorFn = (
   const tokens = authService.getTokens();
 
   const clonedRequest =
-    tokens && tokens.idToken
+    tokens && tokens.idToken && !req.headers.has('Authorization')
       ? req.clone({
         setHeaders: {
           Authorization: 'Bearer ' + tokens.idToken,

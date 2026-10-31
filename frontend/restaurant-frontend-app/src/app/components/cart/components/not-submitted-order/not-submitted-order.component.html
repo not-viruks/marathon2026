@@ -1,42 +1,36 @@
-<div class="not-submitted-order">
-  <div class="content">
-    <div class="order">
-      <span class="body-bold">
-        Pre-order #{{ order().orderId }}
-        ({{ order().reservationAddress }}, {{ order().reservationTime }})
-      </span>
+@if (!selectedGuest()) {
+  <!-- MAIN CART VIEW (Figma Image 3) -->
+  <div class="cart-main-view">
+    <!-- MY PRE-ORDER SECTION -->
+    <div class="section-container">
+      <h3 class="section-heading">My Pre-Order</h3>
 
-      <div class="order-item">
+      <div class="order-items-list">
         @for (item of order().orderItems; track item.dish.id) {
-        <div class="order-item-dish">
-          <img
-            class="dish-image"
-            [src]="item.dish.imageUrl"
-            [alt]="item.dish.name"
-            width="96"
-            height="96"
-          />
+          <div class="order-item-dish">
+            <img
+              class="dish-image"
+              [src]="item.dish.imageUrl || 'assets/img/dish.png'"
+              (error)="$any($event.target).src = 'assets/img/dish.png'"
+              [alt]="item.dish.name"
+              width="80"
+              height="80"
+            />
 
-          <div class="container">
-            <div class="details">
-              <div class="dish-name">
-                <span class="body-bold">{{ item.dish.name }}</span>
+            <div class="container">
+              <div class="details">
+                <div class="dish-name">
+                  <span class="body-bold">{{ item.dish.name }}</span>
                   <span class="caption">Expected ready time – 10 minutes</span>
                 </div>
 
                 <button
                   type="button"
-                  class="icon-button icon-button--small"
+                  class="icon-button icon-button--small trash-btn"
                   [attr.aria-label]="'Remove ' + item.dish.name"
                   (click)="removeDishFromOrder(item.dish.id)"
                 >
-                  <img
-                    src="assets/svg/trash.svg"
-                    alt=""
-                    aria-hidden="true"
-                    width="24"
-                    height="24"
-                  />
+                  <img src="assets/svg/trash.svg" alt="" aria-hidden="true" width="20" height="20" />
                 </button>
               </div>
 
@@ -44,44 +38,32 @@
                 <div class="quantity-buttons">
                   <button
                     type="button"
-                    class="icon-button icon-button--small"
+                    class="icon-button icon-button--small stepper-btn"
                     aria-label="Decrease quantity"
                     [disabled]="item.quantity <= 1"
                     (click)="decrementItemQuantity(item.dish.id)"
                   >
-                    <img
-                      src="assets/svg/minus-green.svg"
-                      alt=""
-                      aria-hidden="true"
-                      width="24"
-                      height="24"
-                    />
+                    <img src="assets/svg/minus-green.svg" alt="" aria-hidden="true" width="20" height="20" />
                   </button>
 
                   <span class="value">{{ item.quantity }}</span>
 
                   <button
                     type="button"
-                    class="icon-button icon-button--small"
+                    class="icon-button icon-button--small stepper-btn"
                     aria-label="Increase quantity"
                     (click)="incrementItemQuantity(item.dish.id)"
                   >
-                    <img
-                      src="assets/svg/plus-green.svg"
-                      alt=""
-                      aria-hidden="true"
-                      width="24"
-                      height="24"
-                    />
+                    <img src="assets/svg/plus-green.svg" alt="" aria-hidden="true" width="20" height="20" />
                   </button>
                 </div>
 
-                <span class="body-bold">
-        {{ item.dish.price * item.quantity | currency }}
-        </span>
-      </div>
-    </div>
-  </div>
+                <span class="body-bold item-price">
+                  {{ item.dish.price * item.quantity | currency }}
+                </span>
+              </div>
+            </div>
+          </div>
         }
 
         <button
@@ -89,30 +71,226 @@
           class="button button--tertiary button--large add-dish-btn"
           (click)="addDishToOrder()"
         >
-          <img
-            src="assets/svg/plus-green.svg"
-            alt=""
-            aria-hidden="true"
-            width="24"
-            height="24"
-          />
-
+          <img src="assets/svg/plus-green.svg" alt="" aria-hidden="true" width="20" height="20" />
           Add dish
         </button>
       </div>
     </div>
 
-    <div class="total">
-      <span class="body-bold">Total payment</span>
-      <h2>{{ totalPrice() | currency }}</h2>
+    <!-- GUESTS PRE-ORDER SECTION (Figma Image 3) -->
+    @if (hasGroup()) {
+      <div class="section-container guests-section">
+        <h3 class="section-heading">Guests Pre-Order</h3>
+
+        @if (guests().length > 0) {
+          <div class="guests-list">
+            @for (guest of guests(); track guest.id) {
+              <div class="guest-card">
+                <div class="guest-card-header">
+                  <span class="guest-name">{{ guest.name }}</span>
+
+                  <div class="guest-actions">
+                    <button
+                      type="button"
+                      class="icon-button icon-button--small"
+                      aria-label="Edit guest pre-order"
+                      (click)="selectGuest(guest)"
+                    >
+                      <img src="assets/svg/edit.svg" alt="Edit" width="18" height="18" />
+                    </button>
+
+                    <button
+                      type="button"
+                      class="icon-button icon-button--small"
+                      aria-label="Remove guest"
+                      (click)="openRemoveGuest(guest)"
+                    >
+                      <img src="assets/svg/trash.svg" alt="Delete" width="18" height="18" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Horizontal dishes preview -->
+                <div class="dishes-preview-row">
+                  @for (dishItem of guest.items.slice(0, 5); track dishItem.dish.id) {
+                    <div class="dish-preview-item" (click)="selectGuest(guest)">
+                      <img
+                        class="dish-preview-img"
+                        [src]="dishItem.dish.imageUrl || 'assets/img/dish.png'"
+                        (error)="$any($event.target).src = 'assets/img/dish.png'"
+                        [alt]="dishItem.dish.name"
+                        width="48"
+                        height="48"
+                      />
+                      <span class="dish-preview-name">{{ dishItem.dish.name }}</span>
+                    </div>
+                  }
+
+                  @if (guest.items.length > 5) {
+                    <div class="more-dishes-badge" (click)="selectGuest(guest)">
+                      +{{ guest.items.length - 5 }}
+                    </div>
+                  }
+
+                  @if (guest.items.length === 0) {
+                    <span class="caption no-dishes">Still choosing dishes</span>
+                  }
+                </div>
+
+                <!-- Footer of guest card -->
+                <div class="guest-card-footer">
+                  <button
+                    type="button"
+                    class="show-more-btn"
+                    (click)="selectGuest(guest)"
+                  >
+                    Show more
+                  </button>
+
+                  <span class="guest-total">
+                    {{ guest.name }} Pre-Order Total: {{ guest.total | currency }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="caption empty-guests">No guests have joined this pre-order yet.</p>
+        }
+
+        <button
+          type="button"
+          class="invite-guests-btn"
+          (click)="openInviteModal()"
+        >
+          <img src="assets/svg/plus-green.svg" alt="" width="20" height="20" />
+          Invite more guests
+        </button>
+      </div>
+    }
+
+    <!-- SUMMARY & SUBMIT (Image 3) -->
+    <div class="cart-footer-summary">
+      <div class="grand-total-row">
+        <span class="grand-total-label">Grand Total</span>
+        <span class="grand-total-amount">{{ grandTotal() | currency }}</span>
+      </div>
+
+      <button
+        type="button"
+        class="button button--primary button--large submit-btn"
+        (click)="submit()"
+      >
+        Submit Pre-Order
+      </button>
     </div>
   </div>
+} @else {
+  <!-- GUEST DETAIL DRILLDOWN VIEW (Figma Image 4) -->
+  @if (selectedGuest(); as guest) {
+    <div class="cart-guest-view">
+      <!-- Top Navigation Pills -->
+      <div class="guest-nav-pills">
+        <button
+          type="button"
+          class="nav-pill-btn"
+          (click)="backToMyPreOrder()"
+        >
+          Back to my Pre-Order
+        </button>
 
-  <button
-    type="button"
-    class="button button--primary button--large submit-btn"
-    (click)="submit()"
-  >
-    Submit Pre-order
-  </button>
-</div>
+        @if (nextGuest(); as nextG) {
+          <button
+            type="button"
+            class="nav-pill-btn"
+            (click)="selectGuest(nextG)"
+          >
+            To {{ nextG.name }} Pre-Order
+          </button>
+        }
+      </div>
+
+      <!-- Guest Order Header -->
+      <h3 class="guest-preorder-title">{{ guest.name }} Pre-Order</h3>
+
+      <!-- Guest Dishes List -->
+      <div class="order-items-list">
+        @for (item of guest.items; track item.dish.id) {
+          <div class="order-item-dish">
+            <img
+              class="dish-image"
+              [src]="item.dish.imageUrl || 'assets/img/dish.png'"
+              (error)="$any($event.target).src = 'assets/img/dish.png'"
+              [alt]="item.dish.name"
+              width="80"
+              height="80"
+            />
+
+            <div class="container">
+              <div class="details">
+                <div class="dish-name">
+                  <span class="body-bold">{{ item.dish.name }}</span>
+                  <span class="caption">Expected ready time – 10 minutes</span>
+                </div>
+              </div>
+
+              <div class="quantity">
+                <span class="value">Qty: {{ item.quantity }}</span>
+
+                <span class="body-bold item-price">
+                  {{ item.dish.price * item.quantity | currency }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (guest.items.length === 0) {
+          <p class="caption empty-guest-dishes">{{ guest.name }} has not added any dishes yet.</p>
+        }
+      </div>
+
+      <!-- Bottom Back Button (Image 4) -->
+      <div class="guest-view-footer">
+        <button
+          type="button"
+          class="button button--primary button--large back-btn"
+          (click)="backToMyPreOrder()"
+        >
+          Back
+        </button>
+      </div>
+    </div>
+  }
+}
+
+<!-- REMOVE GUEST CONFIRMATION MODAL -->
+@if (guestToRemove(); as guest) {
+  <app-modal title="Remove Guest" (closed)="closeRemoveGuestModal()">
+    <p>Are you sure you want to remove <strong>{{ guest.name }}</strong> from this group pre-order? Their dishes will be discarded.</p>
+    <div modal-actions class="modal-actions-row">
+      <button type="button" class="button button--secondary" (click)="closeRemoveGuestModal()">Cancel</button>
+      <button type="button" class="button button--primary danger-btn" (click)="confirmRemoveGuest()" [disabled]="isRemovingGuest()">
+        {{ isRemovingGuest() ? 'Removing...' : 'Remove' }}
+      </button>
+    </div>
+  </app-modal>
+}
+
+<!-- INVITE MODAL -->
+@if (isInviteModalOpen()) {
+  <app-modal title="Invite Guests" (closed)="closeInviteModal()">
+    <div class="invite-modal-content">
+      <p class="invite-hint">Share this link with your guests so they can join your pre-order:</p>
+      <div class="invite-input-row">
+        <input type="text" class="invite-input-box" [value]="inviteLink() ?? ''" readonly placeholder="Generating invite link..." />
+        <button type="button" class="button button--primary copy-link-btn" [disabled]="!inviteLink()" (click)="copyInviteLink()">
+          Copy
+        </button>
+      </div>
+    </div>
+    <div modal-actions class="modal-actions-row">
+      <button type="button" class="button button--secondary" (click)="closeInviteModal()">Close</button>
+    </div>
+  </app-modal>
+}

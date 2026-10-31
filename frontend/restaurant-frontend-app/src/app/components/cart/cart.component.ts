@@ -52,9 +52,26 @@ export class CartComponent implements OnInit {
     ),
   );
 
-  readonly unsubmittedOrders = computed(() =>
-    this.orders().filter((order) => order.status === 0),
-  );
+  readonly unsubmittedOrders = computed(() => {
+    const unsubmitted = this.orders().filter((order) => order.status === 0);
+    const byReservation = new Map<string, Order>();
+    for (const order of unsubmitted) {
+      const existing = byReservation.get(order.reservationId);
+      if (!existing) {
+        byReservation.set(order.reservationId, { ...order, orderItems: [...order.orderItems] });
+      } else {
+        for (const item of order.orderItems) {
+          const found = existing.orderItems.find((i) => i.dish.id === item.dish.id);
+          if (found) {
+            found.quantity = Math.max(found.quantity, item.quantity);
+          } else {
+            existing.orderItems.push({ ...item });
+          }
+        }
+      }
+    }
+    return Array.from(byReservation.values());
+  });
 
   readonly submittedOrder = computed(() => {
     const orderId = this.submitOrderId();

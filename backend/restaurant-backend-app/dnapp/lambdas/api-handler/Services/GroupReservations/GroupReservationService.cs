@@ -136,7 +136,11 @@ public class GroupReservationService(
         if (reservation.Status != ReservationStatus.Reserved)
             throw new GroupReservationExpiredException("The group reservation is expired.");
 
-        GroupReservation groupReservation = (await groupReservationRepository.GetByReservationIdAsync(reservationId))!;
+        GroupReservation? groupReservation = await groupReservationRepository.GetByReservationIdAsync(reservationId);
+        if (groupReservation is null)
+        {
+            groupReservation = await CreateGroupReservationAsync(reservationId);
+        }
 
         if (groupReservation.Status == GroupReservationStatus.Submitted)
             throw new GroupReservationSubmittedException();

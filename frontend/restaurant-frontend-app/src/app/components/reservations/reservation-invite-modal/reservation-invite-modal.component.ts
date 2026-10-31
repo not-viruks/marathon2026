@@ -104,6 +104,11 @@ export class ReservationInviteModalComponent implements OnInit {
     this.router.navigate(['/reservations']);
   }
 
+  onViewGroupPreOrder(): void {
+    this.closed.emit();
+    this.router.navigate(['/reservations', this.reservation().id, 'group-order']);
+  }
+
   onMakePreOrder(): void {
     this.closed.emit();
     this.router.navigate(['/menu']);

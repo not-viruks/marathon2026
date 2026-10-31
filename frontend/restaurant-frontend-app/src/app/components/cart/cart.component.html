@@ -34,14 +34,6 @@
 
     @if (unsubmittedOrders().length > 0) {
       <div class="orders-list">
-        <div class="list-header">
-          <h3>Not submitted pre-orders</h3>
-
-          <span class="body">
-            You have not submitted pre-orders
-          </span>
-        </div>
-
         @for (
             item of unsubmittedOrders();
           track item.orderId

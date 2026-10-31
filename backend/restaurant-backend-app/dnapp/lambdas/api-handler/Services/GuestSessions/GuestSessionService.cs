@@ -392,8 +392,18 @@ public class GuestSessionService(
             throw new ActionForbiddenException("Only the reservation owner can perform this action.");
         }
 
-        var groupReservation = await groupReservationRepository.GetByReservationIdAsync(reservationId)
-            ?? throw new GroupReservationNotFoundException($"Group reservation for reservation '{reservationId}' not found.");
+        var groupReservation = await groupReservationRepository.GetByReservationIdAsync(reservationId);
+        if (groupReservation == null)
+        {
+            groupReservation = new GroupReservation
+            {
+                GroupReservationId = Guid.NewGuid().ToString(),
+                ReservationId = reservationId,
+                ReservationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant(),
+                Status = GroupReservationStatus.Open,
+            };
+            await groupReservationRepository.SaveGroupReservationAsync(groupReservation);
+        }
 
         var sessions = await guestSessionRepository.GetAllByGroupReservationIdAsync(groupReservation.GroupReservationId);
         var ownerSession = sessions.FirstOrDefault(s => s.IsOwnerSession || s.OwnerUserId == userId);

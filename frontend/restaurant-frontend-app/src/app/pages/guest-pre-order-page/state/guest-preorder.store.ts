@@ -116,6 +116,11 @@ export class GuestPreorderStore {
         try {
             const inv = await firstValueFrom(this.guestInviteService.getInvite$(token));
             this.invite.set(inv);
+
+            const storedName = this.guestName();
+            if (storedName && (!this.guestSessionId() || !this.guestSessionToken())) {
+                void this.join(storedName);
+            }
         } catch (error) {
             this.invite.set(null);
             const status = error instanceof HttpErrorResponse ? error.status : null;
@@ -134,7 +139,7 @@ export class GuestPreorderStore {
 
         this.setGuestName(name);
 
-        const groupReservationId = inv.GroupReservationId;
+        const groupReservationId = inv.GroupReservationId ?? (inv as any).groupReservationId;
         if (!groupReservationId) {
             this.joinError.set('Invite is missing GroupReservationId');
             return;
@@ -152,8 +157,10 @@ export class GuestPreorderStore {
 
         try {
             const res = await firstValueFrom(this.guestSessionsService.createSession(payload));
-            this.guestSessionId.set(res.SessionId);
-            this.guestSessionToken.set(res.SessionToken);
+            const sessionId = res.SessionId ?? (res as any).sessionId;
+            const sessionToken = res.SessionToken ?? (res as any).sessionToken;
+            this.guestSessionId.set(sessionId);
+            this.guestSessionToken.set(sessionToken);
             await this.loadMenu();
         } catch (e) {
             console.log('[join error]', e);
@@ -167,17 +174,20 @@ export class GuestPreorderStore {
         const inv = this.invite();
         if (!inv) return null;
 
-        const inviterName = inv.InviterName ?? 'Someone';
-        const restaurantName = inv.RestaurantName ?? '—';
-        const locationAddress = inv.LocationAddress ?? '—';
+        const inviterName = inv.InviterName ?? (inv as any).inviterName ?? 'Someone';
+        const restaurantName = inv.RestaurantName ?? (inv as any).restaurantName ?? '—';
+        const locationAddress = inv.LocationAddress ?? (inv as any).locationAddress ?? '—';
 
+        const tableNum = inv.TableNumber ?? (inv as any).tableNumber;
         const tableNumberText =
-            inv.TableNumber != null && String(inv.TableNumber).trim() !== ''
-                ? `Table ${inv.TableNumber}`
+            tableNum != null && String(tableNum).trim() !== ''
+                ? `Table ${tableNum}`
                 : '—';
 
-        const startText = inv.StartTime ? String(inv.StartTime) : '';
-        const endText = inv.EndTime ? String(inv.EndTime) : '';
+        const rawStart = inv.StartTime ?? (inv as any).startTime;
+        const rawEnd = inv.EndTime ?? (inv as any).endTime;
+        const startText = rawStart ? String(rawStart) : '';
+        const endText = rawEnd ? String(rawEnd) : '';
 
         const dateText = startText
             ? new Date(startText).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
@@ -187,7 +197,8 @@ export class GuestPreorderStore {
             ? `${new Date(startText).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(endText).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`
             : '—';
 
-        const guestsText = inv.MaxGuestCount != null ? `${inv.MaxGuestCount} people` : '—';
+        const maxGuests = inv.MaxGuestCount ?? (inv as any).maxGuestCount;
+        const guestsText = maxGuests != null ? `${maxGuests} people` : '—';
 
         return { inviterName, restaurantName, locationAddress, tableNumberText, dateText, timeText, guestsText };
     });
@@ -211,9 +222,8 @@ export class GuestPreorderStore {
         try {
             const res = await firstValueFrom(this.guestSessionsService.getMenu(id, token));
             console.log('[menu response]', res);
-            console.log('[menu dishes keys]', Object.keys(res.dishes ?? {}));
-
-            this.menuByCategory.set(res.dishes ?? {});
+            const dishes = res?.dishes ?? (res as any)?.Dishes ?? {};
+            this.menuByCategory.set(dishes);
         } catch (e) {
             console.log('[menu error]', e);
             this.menuError.set('Failed to load menu');

@@ -1,3 +1,7 @@
-﻿namespace APIHandler.Models.GroupReservation;
+using System.Text.Json.Serialization;
 
-public record GetGroupInviteTokenResponse(string Token);
+namespace APIHandler.Models.GroupReservation;
+
+public record GetGroupInviteTokenResponse(
+    [property: JsonPropertyName("token")] string Token
+);

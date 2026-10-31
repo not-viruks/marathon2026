@@ -122,20 +122,24 @@ export class GuestPreOrderPageComponent {
     }
 
     private toCardDish(dish: GuestMenuDish, category: string): DishListResponse {
+        const d = dish as any;
+        const isSelectable = dish.selectable ?? d.Selectable ?? true;
+        const stateStr = dish.state ?? d.State ?? 'Available';
+
         return {
-            id: dish.id,
-            name: dish.name,
-            imageUrl: dish.imageUrl || 'assets/img/dish.png',
-            price: dish.price,
-            state: dish.selectable ? dish.state : 'OutOfStock',
-            weight: dish.weight ?? '',
+            id: dish.id ?? d.Id ?? '',
+            name: dish.name ?? d.Name ?? '',
+            imageUrl: dish.imageUrl || d.ImageUrl || 'assets/img/dish.png',
+            price: dish.price ?? d.Price ?? 0,
+            state: isSelectable ? stateStr : 'OutOfStock',
+            weight: dish.weight ?? d.Weight ?? '',
             dishType: category,
-            description: dish.description ?? '',
-            calories: dish.calories ?? '',
-            proteins: dish.proteins ?? '',
-            carbohydrates: dish.carbohydrates ?? '',
-            fats: dish.fats ?? '',
-            vitamins: dish.vitamins ?? '',
+            description: dish.description ?? d.Description ?? '',
+            calories: dish.calories ?? d.Calories ?? '',
+            proteins: dish.proteins ?? d.Proteins ?? '',
+            carbohydrates: dish.carbohydrates ?? d.Carbohydrates ?? '',
+            fats: dish.fats ?? d.Fats ?? '',
+            vitamins: dish.vitamins ?? d.Vitamins ?? '',
         };
     }
 
